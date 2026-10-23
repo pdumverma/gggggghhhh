@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-canvas: #0A0A0C;
+    --bg-card: #141417;
+    --bg-card-hover: #18181D;
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-hover: rgba(255, 255, 255, 0.14);
+    --text-primary: #EDEDEF;
+    --text-secondary: #9FA2AC;
+    --text-tertiary: #6E717D;
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 'Noto Sans Devanagari', 'Noto Sans Gujarati', sans-serif;
+    background-color: #0A0A0C;
+    color: #EDEDEF;
+    letter-spacing: -0.011em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+  }
+
+  /* Refined, distraction-free scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.22);
+  }
+}
+
+/* Tactile Physics Micro-Interactions */
+.btn-tactile {
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 180ms ease-out,
+              border-color 180ms ease-out,
+              box-shadow 180ms ease-out;
+  cursor: pointer;
+  user-select: none;
+}
+.btn-tactile:hover {
+  transform: translateY(-1px);
+}
+.btn-tactile:active {
+  transform: scale(0.978) translateY(0.5px);
+}
+
+.btn-tactile-subtle {
+  transition: transform 140ms cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 140ms ease-out,
+              color 140ms ease-out;
+  cursor: pointer;
+  user-select: none;
+}
+.btn-tactile-subtle:active {
+  transform: scale(0.975) translateY(0.5px);
+}
+
+/* Obsidian Surface Tokens */
+.card-obsidian {
+  background-color: #141417;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.card-obsidian-elevated {
+  background-color: #16161A;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+}
+
+.card-obsidian-interactive {
+  background-color: #141417;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  transition: border-color 200ms ease, background-color 200ms ease, transform 180ms ease;
+}
+.card-obsidian-interactive:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background-color: #17171C;
+}
+
+/* Monospace Tabular Figures */
+.font-tabular {
+  font-feature-settings: 'tnum' 1, 'lnum' 1, 'cv05' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ambient glow accents */
+.ambient-glow-emerald {
+  background: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+}
+
+.ambient-glow-subtle {
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.035) 0%, transparent 60%);
+}

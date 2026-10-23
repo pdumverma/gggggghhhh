@@ -1,0 +1,257 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidCategory(cat) {
+      return cat is string && cat in [
+        'Utilities',
+        'Supplies & Stock',
+        'Marketing',
+        'Transport',
+        'Packaging',
+        'Office'
+      ];
+    }
+
+    function isValidStatus(st) {
+      return st is string && st in [
+        'confirmed',
+        'needs_review',
+        'possible_duplicate'
+      ];
+    }
+
+    // Validation Blueprint for Receipt
+    function isValidReceipt(data, userId) {
+      return data.keys().hasAll([
+          'id',
+          'ownerId',
+          'vendor',
+          'date',
+          'category',
+          'total',
+          'status',
+          'fileName',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'vendor',
+          'date',
+          'category',
+          'total',
+          'status',
+          'fileName',
+          'currency',
+          'unclearFields',
+          'sourceTag',
+          'duplicateOfId',
+          'gstin',
+          'address',
+          'billNo',
+          'subtotal',
+          'tax',
+          'confidenceScore',
+          'overrideConfirmed',
+          'arithmeticMismatch',
+          'arithmeticMessage',
+          'items',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.ownerId is string && data.ownerId.size() <= 128 && data.ownerId == userId &&
+        data.vendor is string && data.vendor.size() >= 1 && data.vendor.size() <= 200 &&
+        data.date is string && data.date.size() >= 1 && data.date.size() <= 64 &&
+        isValidCategory(data.category) &&
+        data.total is number && data.total >= 0 && data.total <= 100000000 &&
+        isValidStatus(data.status) &&
+        data.fileName is string && data.fileName.size() >= 1 && data.fileName.size() <= 256 &&
+        (!('currency' in data) || (data.currency is string && data.currency.size() <= 12)) &&
+        (!('unclearFields' in data) || (data.unclearFields is list && data.unclearFields.size() <= 10 && (data.unclearFields.size() == 0 || (data.unclearFields[0] is string && data.unclearFields[0].size() <= 64)))) &&
+        (!('sourceTag' in data) || (data.sourceTag is string && data.sourceTag in ['Scan', 'Upload', 'Register', 'Video'])) &&
+        (!('duplicateOfId' in data) || (data.duplicateOfId is string && data.duplicateOfId.size() <= 64)) &&
+        (!('gstin' in data) || (data.gstin is string && data.gstin.size() <= 32)) &&
+        (!('address' in data) || (data.address is string && data.address.size() <= 400)) &&
+        (!('billNo' in data) || (data.billNo is string && data.billNo.size() <= 64)) &&
+        (!('subtotal' in data) || data.subtotal == null || (data.subtotal is number && data.subtotal >= 0)) &&
+        (!('tax' in data) || data.tax == null || (data.tax is number && data.tax >= 0)) &&
+        (!('confidenceScore' in data) || (data.confidenceScore is number && data.confidenceScore >= 0 && data.confidenceScore <= 1)) &&
+        (!('overrideConfirmed' in data) || data.overrideConfirmed is bool) &&
+        (!('arithmeticMismatch' in data) || data.arithmeticMismatch is bool) &&
+        (!('arithmeticMessage' in data) || (data.arithmeticMessage is string && data.arithmeticMessage.size() <= 300)) &&
+        (!('items' in data) || (data.items is list && data.items.size() <= 50 && (data.items.size() == 0 || data.items[0] is map)));
+    }
+
+    // Validation Blueprint for ShopSettings (PII Isolated)
+    function isValidShopSettings(data, userId) {
+      return data.keys().hasAll([
+          'ownerId',
+          'shopName',
+          'ownerName',
+          'gstin',
+          'phone',
+          'email',
+          'address',
+          'currencySymbol',
+          'duplicateDetectionEnabled',
+          'flagUnclearDates',
+          'autoCategorizeReceipts',
+          'monthlyBudget',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'shopName',
+          'ownerName',
+          'gstin',
+          'phone',
+          'email',
+          'address',
+          'currencySymbol',
+          'duplicateDetectionEnabled',
+          'flagUnclearDates',
+          'autoCategorizeReceipts',
+          'monthlyBudget',
+          'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() <= 128 && data.ownerId == userId &&
+        data.shopName is string && data.shopName.size() >= 1 && data.shopName.size() <= 200 &&
+        data.ownerName is string && data.ownerName.size() <= 160 &&
+        data.gstin is string && data.gstin.size() <= 32 &&
+        data.phone is string && data.phone.size() <= 32 &&
+        data.email is string && data.email.size() <= 160 &&
+        data.address is string && data.address.size() <= 400 &&
+        data.currencySymbol is string && data.currencySymbol.size() <= 8 &&
+        data.duplicateDetectionEnabled is bool &&
+        data.flagUnclearDates is bool &&
+        data.autoCategorizeReceipts is bool &&
+        data.monthlyBudget is number && data.monthlyBudget >= 0 && data.monthlyBudget <= 100000000;
+    }
+
+    // Collection 1: Per-user Receipts
+    match /users/{userId}/receipts/{receiptId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(receiptId) && existing().ownerId == request.auth.uid;
+      allow list: if isOwner(userId) && existing().ownerId == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidId(receiptId) &&
+        receiptId == incoming().id &&
+        isValidReceipt(incoming(), userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidId(receiptId) &&
+        isValidReceipt(incoming(), userId) &&
+        incoming().id == existing().id &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'vendor',
+          'date',
+          'category',
+          'total',
+          'status',
+          'fileName',
+          'currency',
+          'unclearFields',
+          'sourceTag',
+          'duplicateOfId',
+          'gstin',
+          'address',
+          'billNo',
+          'subtotal',
+          'tax',
+          'confidenceScore',
+          'overrideConfirmed',
+          'arithmeticMismatch',
+          'arithmeticMessage',
+          'items',
+          'updatedAt'
+        ]);
+
+      allow delete: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidId(receiptId) &&
+        existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 2: Private Shop Settings (PII Isolation)
+    match /users/{userId}/private/{docId} {
+      allow get: if isOwner(userId) && isValidId(userId) && isValidId(docId) && existing().ownerId == request.auth.uid;
+      allow list: if false;
+
+      allow create: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidId(docId) &&
+        docId == 'settings' &&
+        isValidShopSettings(incoming(), userId) &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isOwner(userId) &&
+        isValidId(userId) &&
+        isValidId(docId) &&
+        docId == 'settings' &&
+        isValidShopSettings(incoming(), userId) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'shopName',
+          'ownerName',
+          'gstin',
+          'phone',
+          'email',
+          'address',
+          'currencySymbol',
+          'duplicateDetectionEnabled',
+          'flagUnclearDates',
+          'autoCategorizeReceipts',
+          'monthlyBudget',
+          'updatedAt'
+        ]);
+
+      allow delete: if false;
+    }
+  }
+}

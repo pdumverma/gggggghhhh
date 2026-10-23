@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "Receipt": {
+      "title": "Receipt",
+      "description": "A shop expense receipt or bill record managed by the shop owner.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Receipt identifier such as R-0101",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the shop owner",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "vendor": {
+          "type": "string",
+          "description": "Merchant or supplier name",
+          "maxLength": 200
+        },
+        "date": {
+          "type": "string",
+          "description": "Display or ISO receipt date",
+          "maxLength": 64
+        },
+        "category": {
+          "type": "string",
+          "description": "Expense category",
+          "enum": [
+            "Utilities",
+            "Supplies & Stock",
+            "Marketing",
+            "Transport",
+            "Packaging",
+            "Office"
+          ]
+        },
+        "total": {
+          "type": "number",
+          "description": "Total payable amount"
+        },
+        "status": {
+          "type": "string",
+          "description": "Verification status of the receipt",
+          "enum": ["confirmed", "needs_review", "possible_duplicate"]
+        },
+        "fileName": {
+          "type": "string",
+          "description": "Source file name",
+          "maxLength": 256
+        },
+        "currency": {
+          "type": "string",
+          "description": "ISO currency code",
+          "maxLength": 12
+        },
+        "sourceTag": {
+          "type": "string",
+          "description": "How the bill entered the ledger",
+          "enum": ["Scan", "Upload", "Register", "Video"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "vendor",
+        "date",
+        "category",
+        "total",
+        "status",
+        "fileName",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ShopSettings": {
+      "title": "ShopSettings",
+      "description": "Private shop configuration and owner PII settings.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the shop owner",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "shopName": {
+          "type": "string",
+          "description": "Shop or business name",
+          "maxLength": 200
+        },
+        "ownerName": {
+          "type": "string",
+          "description": "Owner full name",
+          "maxLength": 160
+        },
+        "gstin": {
+          "type": "string",
+          "description": "Shop GSTIN",
+          "maxLength": 32
+        },
+        "phone": {
+          "type": "string",
+          "description": "Owner phone number",
+          "maxLength": 32
+        },
+        "email": {
+          "type": "string",
+          "description": "Owner email address",
+          "maxLength": 160
+        },
+        "address": {
+          "type": "string",
+          "description": "Shop physical address",
+          "maxLength": 400
+        },
+        "currencySymbol": {
+          "type": "string",
+          "description": "Display currency symbol",
+          "maxLength": 8
+        },
+        "duplicateDetectionEnabled": {
+          "type": "boolean",
+          "description": "Whether duplicate bill detection is enabled"
+        },
+        "flagUnclearDates": {
+          "type": "boolean",
+          "description": "Whether unclear dates are flagged"
+        },
+        "autoCategorizeReceipts": {
+          "type": "boolean",
+          "description": "Whether AI pre-categorization is enabled"
+        },
+        "monthlyBudget": {
+          "type": "number",
+          "description": "Monthly expense target in INR"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "ownerId",
+        "shopName",
+        "ownerName",
+        "gstin",
+        "phone",
+        "email",
+        "address",
+        "currencySymbol",
+        "duplicateDetectionEnabled",
+        "flagUnclearDates",
+        "autoCategorizeReceipts",
+        "monthlyBudget",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/receipts/{receiptId}": {
+      "schema": { "$ref": "#/entities/Receipt" },
+      "description": "Per-user shop expense receipts collection."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/ShopSettings" },
+      "description": "Isolated private shop settings and owner PII."
+    }
+  }
+}
